@@ -1,0 +1,196 @@
+{
+  "skill_name": "npu-test-gap-v8",
+  "version": "8.0.0",
+  "description": "Universal GPU vs NPU test gap analysis and generation with bilingual documentation",
+  
+  "supported_features": [
+    "lora",
+    "ep",
+    "expert_parallelism",
+    "moe",
+    "attention",
+    "quantization",
+    "speculative",
+    "radix_cache",
+    "context_parallelism",
+    "cp"
+  ],
+  
+  "directories": {
+    "gpu_base": "test/registered",
+    "gpu_manual": "test/manual",
+    "gpu_srt": "test/srt",
+    "npu_base": "test/registered/ascend/basic_function",
+    "npu_generated": "test/registered/ascend/generated_tests"
+  },
+  
+  "unit_test_patterns": {
+    "exclude_files": [
+      "*_unit.py",
+      "*_kernel.py",
+      "*logprob_diff*.py"
+    ],
+    "exclude_keywords": [
+      "MagicMock",
+      "unittest.mock",
+      "pytest.fixture",
+      "@pytest"
+    ],
+    "exclude_classes": [
+      "*UnitTests*",
+      "*KernelTest*"
+    ]
+  },
+  
+  "integration_test_patterns": {
+    "include_keywords": [
+      "popen_launch_server",
+      "SRTRunner",
+      "HFRunner",
+      "requests.post",
+      "DEFAULT_URL_FOR_TEST"
+    ],
+    "server_startup_patterns": [
+      "setUpClass",
+      "popen_launch_server",
+      "launch_server"
+    ]
+  },
+  
+  "npu_adaptations": {
+    "mandatory_args": [
+      "--attention-backend ascend",
+      "--disable-cuda-graph"
+    ],
+    "optional_args": {
+      "mem_fraction_static": {
+        "small_model": "0.3",
+        "medium_model": "0.5",
+        "large_model": "0.8"
+      },
+      "tp_size": {
+        "default": "2",
+        "large_model": "16"
+      }
+    }
+  },
+  
+  "model_paths": {
+    "lora": {
+      "base": "LLAMA_3_2_1B_INSTRUCT_WEIGHTS_PATH",
+      "adapter": "LLAMA_3_2_1B_INSTRUCT_TOOL_CALLING_LORA_WEIGHTS_PATH"
+    },
+    "ep": {
+      "default": "DEEPSEEK_V3_2_W8A8_WEIGHTS_PATH",
+      "qwen": "QWEN3_30B_A3B_W8A8_WEIGHTS_PATH"
+    },
+    "cp": {
+      "default": "DEEPSEEK_V3_2_W8A8_WEIGHTS_PATH",
+      "qwen": "QWEN3_30B_A3B_WEIGHTS_PATH"
+    },
+    "tied_lm_head": {
+      "base": "QWEN2_5_7B_INSTRUCT_WEIGHTS_PATH"
+    },
+    "embedding": {
+      "base": "E5_MISTRAL_7B_INSTRUCT_WEIGHTS_PATH"
+    }
+  },
+  
+  "ci_registration": {
+    "default_suite": "nightly-2-npu-a3",
+    "est_time_range": {
+      "basic": 200,
+      "standard": 400,
+      "complex": 600
+    }
+  },
+  
+  "bilingual_documentation": {
+    "enabled": true,
+    "languages": ["English", "Chinese"],
+    "required_in": [
+      "README_GENERATED.md",
+      "test_class_docstring",
+      "test_method_docstring",
+      "output_report"
+    ],
+    "format": "English first, then Chinese translation",
+    "separator": " / "
+  },
+  
+  "workflow_steps": [
+    {
+      "step": 1,
+      "name": "graphify_analysis",
+      "action": "Query graphify for feature architecture",
+      "action_cn": "使用graphify查询功能架构",
+      "command": "graphify query '<feature>' --budget 3000",
+      "output": "Key nodes and relationships",
+      "output_cn": "关键节点和关系"
+    },
+    {
+      "step": 2,
+      "name": "gpu_collection",
+      "action": "Collect GPU integration tests",
+      "action_cn": "收集GPU集成测试",
+      "criteria": "Server startup required, exclude unit tests",
+      "criteria_cn": "需要服务器启动，排除单元测试",
+      "output": "GPU test file list with scenarios",
+      "output_cn": "GPU测试文件列表和场景"
+    },
+    {
+      "step": 3,
+      "name": "npu_collection",
+      "action": "Collect existing NPU tests",
+      "action_cn": "收集现有NPU测试",
+      "pattern": "test_npu_<feature>*.py",
+      "output": "NPU test file list with GPU mapping",
+      "output_cn": "NPU测试文件列表和GPU映射"
+    },
+    {
+      "step": 4,
+      "name": "gap_analysis",
+      "action": "Compare and identify gaps",
+      "action_cn": "对比并识别差距",
+      "output": "Gap analysis matrix",
+      "output_cn": "差距分析矩阵"
+    },
+    {
+      "step": 5,
+      "name": "test_generation",
+      "action": "Generate missing NPU tests with bilingual docstrings",
+      "action_cn": "生成缺失的NPU测试（含双语docstring）",
+      "template": "Use appropriate template with bilingual documentation",
+      "output": "New test files with bilingual comments",
+      "output_cn": "新测试文件（含双语注释）"
+    },
+    {
+      "step": 6,
+      "name": "readme_generation",
+      "action": "Generate README_GENERATED.md with bilingual content",
+      "action_cn": "生成双语README_GENERATED.md",
+      "output": "Bilingual README file",
+      "output_cn": "双语README文件"
+    },
+    {
+      "step": 7,
+      "name": "syntax_verification",
+      "action": "Verify generated files",
+      "action_cn": "验证生成文件",
+      "command": "python -m py_compile <file>",
+      "output": "Syntax check results",
+      "output_cn": "语法检查结果"
+    }
+  ],
+  
+  "output_report_sections": [
+    "1. Graphify Architecture Analysis / Graphify架构分析",
+    "2. GPU Integration Tests Summary / GPU集成测试摘要",
+    "3. NPU Existing Tests Summary / NPU现有测试摘要",
+    "4. GPU-NPU Test Mapping Table / GPU-NPU测试映射表",
+    "5. Gap Analysis Matrix / 差距分析矩阵",
+    "6. Generated Files List / 生成的文件列表",
+    "7. Coverage Statistics / 覆盖率统计",
+    "8. Directory Structure / 目录结构"
+  ]
+}
